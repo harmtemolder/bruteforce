@@ -1,57 +1,61 @@
-const nodemailer = require('nodemailer');
-const randomExt = require('random-ext');
-const fs = require('fs-extra');
-const flat = require('flat');
-const util = require('util');
-const humanize = require('humanize');
-var replaceall = require("replaceall");
-var toml = require('toml');
-const _ = require('lodash');
+//require modules
+const fs = require("fs-extra");
+const replaceall = require("replaceall");
+const toml = require("toml");
 
 //setup variables
-var viableStrategies = [];
 var stratKey = "";
 var stratFileName = "";
 var contents = "";
 var stratFileContents = "";
 var baseConfig = "";
-var count=0;
 var outtxt = "";
-//configuration elements
-//starting with paths and the all important gekko config
-var strategiesFolder = '../gekko/config/strategies/';
-var configFile = '../gekko/config-new.js';
-var outputConfigFile = '../gekko/config-ready-to-use.js';
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                      CONFIGURATION ELEMENTS
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//set the path to your TOML files here:
+var strategiesFolder = "../gekko/config/strategies/";
+//set the path to your config file here (don't worry, it will only be read):
+var configFile = "../gekko/config-without-strategies.js";
+//set the path to the config file you want the result to be saved in:
+var outputConfigFile = "../gekko/config-with-strategies.js";
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                    START CONVERTING TOML FILES
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//get filenames of all strategy configurations (TOML files)
+let dirCont = fs.readdirSync(strategiesFolder);
+let strategies = dirCont.filter(function (elm) { return elm.match(/.*\.(toml)/ig); });
+
+//read existing config file into baseConfig variable and remove the last line
 const config = require(configFile);
+baseConfig = fs.readFileSync(configFile, "utf8");
+baseConfig = replaceall("module.exports = config;", "", baseConfig);
 
+//delete the output file if it exists and create a new one
+if (fs.existsSync(outputConfigFile)) {
+	fs.unlinkSync(outputConfigFile);
+}
+fs.appendFileSync(outputConfigFile, baseConfig, encoding = "utf8");
 
-let dirCont = fs.readdirSync( strategiesFolder );
-
-let strategies = dirCont.filter( function( elm ) {return elm.match(/.*\.(toml)/ig);});
-	baseConfig = fs.readFileSync(configFile, 'utf8');
-	baseConfig = replaceall("module.exports = config;", "", baseConfig);
-	if (fs.existsSync(outputConfigFile)){
-		fs.unlinkSync(outputConfigFile);	
-	}
-	fs.appendFileSync(outputConfigFile, baseConfig, encoding = 'utf8');		
-	
+//loop through all strategy configurations and append them to the output file
 for (var i = 0, len = strategies.length; i < len; i++) {
 	stratFileName = strategies[i];
-	if(stratFileName.indexOf("-")>-1){
-		
-	}else{
-		stratKey = strategies[i].slice(0, -5);
-		contents = fs.readFileSync(strategiesFolder+"/"+stratFileName, 'utf8');
-		stratFileContents = toml.parse(contents);
-		outtxt = "config."+stratKey+"="+JSON.stringify(stratFileContents);
-		config[stratKey] = stratFileContents;
-		fs.appendFileSync(outputConfigFile, outtxt+"\r\n\r\n", encoding = 'utf8');	 
-	}
+
+	//parse the contents of the TOML file to stratFileContents
+	stratKey = strategies[i].slice(0, -5);
+	contents = fs.readFileSync(strategiesFolder + "/" + stratFileName, "utf8");
+	stratFileContents = toml.parse(contents);
+
+	//convert stratFileContents to JSON and append it to the output file
+	outtxt = "config['" + stratKey + "'] = " + JSON.stringify(stratFileContents);
+	config[stratKey] = stratFileContents;
+	fs.appendFileSync(outputConfigFile, outtxt + "\r\n\r\n", encoding = "utf8");
 }
-//config is the json formatted strategy configs.
-//stratFileContents is the Gekko config format configs
 
-
-	fs.appendFileSync(outputConfigFile, "module.exports = config;", encoding = 'utf8');	 
-  console.log("Config - "+ outputConfigFile +" is ready to go.");
+//add the last line to the output file to make it "ready to go"
+fs.appendFileSync(outputConfigFile, "module.exports = config;", encoding = "utf8");
+console.log("Config - " + outputConfigFile + " is ready to go.");

@@ -34,7 +34,7 @@
     "replaceall": "^0.1.6",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
-    "toml": "^2.3.3",
+    "toml": "^2.3.5",
     "util": "^0.11.1"
   }
 }
