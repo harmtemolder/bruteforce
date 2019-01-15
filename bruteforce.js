@@ -183,7 +183,7 @@ async function hitApi(configs) {
 				let currencyPair = "currency dunno";//report.currency+report.asset;
 				let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
 				let configCsv = replaceall(",", "|", configCsvTmp1)
-				headertxt = "Strategy, Market performance(%),Strat performance (%),Profit,Run date, Run time, Start date, End date,Currency pair, Candle size, History size,Currency, Asset, Timespan,Yearly profit, Yearly profit (%), Start price, End price, Trades, Start balance, Sharpe, Alpha, Config\n";
+				headertxt = "Strategy,Market Performance(%),Strat Performance (%),Profit,Run Date,Run Time,Start Date,End Date,Currency Pair,Candle Size,History Size,Currency,Asset,Timespan,Yearly Profit,Yearly Profit (%),Start Price,End Price,Trades,Start Balance,Sharpe,Alpha,Config\n";
 				outtxt = data.tradingAdvisor.method+","+ report.market+","+ report.relativeProfit+","+ report.profit+","+runDate+","+runTime+","+ data.backtest.daterange.from+","+ data.backtest.daterange.to+","+ currencyPair+","+ data.tradingAdvisor.candleSize+","+ data.tradingAdvisor.historySize+","+ report.currency+","+ report.asset+","+ report.timespan+","+ report.yearlyProfit+","+ report.relativeYearlyProfit+","+ report.startPrice+","+ report.endPrice+","+ report.trades+","+ report.startBalance+","+ sharpe+","+ report.alpha+","+ configCsv+"\n";	
 
 				if (fs.existsSync(resultCsv)) {
