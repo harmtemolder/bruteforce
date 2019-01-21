@@ -1,3 +1,4 @@
+#!/usr/local/bin/node
 //require modules
 const fs = require("fs-extra");
 const replaceall = require("replaceall");

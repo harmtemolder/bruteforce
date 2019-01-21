@@ -30,7 +30,9 @@ var apiUrl = "http://localhost:3000";
 //if you don't want to write the output to a file then set this to false, but then why the fuck else would you run this....derp
 var writecsv = true;
 //by default we throw the results into the folder and file you see below, the results will be appended...again....derp.
-var resultCsv = __dirname + "/results/" + humanize.date("Ymd_His_") + "bruteforce.csv";
+var resultDir = __dirname + "/results"
+if (!fs.existsSync(resultDir)){fs.mkdirSync(resultDir);}
+var resultCsv = resultDir + "/" + humanize.date("Ymd_His_") + "bruteforce.csv";
 
 //then we load up the important shit!
 
@@ -231,6 +233,8 @@ async function hitApi(configs) {
 				//to do
 				//write strategy file to a new file with a key
 				//ensure the config it appended to the strategy file
+
+				//minor bug: Somehow it doesn't save the CSV if only 1 backtest was run
 
 			}
 			return testResults;
