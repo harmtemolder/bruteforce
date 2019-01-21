@@ -12,7 +12,7 @@ A Swiss Army Node.js brute force backtester for Gekko trading bot. Saves time so
 6. Writes all outputs and strategy configs out into a csv so you can review what strat and related settings are going to make you the most cold hard crypto
 
 ## Installation:
-(You can install Bruteforce wherever you like, but it saves you time if you just set it up in a folder called "bruteforce" in the same folder "gekko" resides.)
+(You can install Bruteforce wherever you like, but it saves you time if you just set it up in a folder called "bruteforce" next to "gekko".)
 
 1. `git clone https://github.com/gekkowarez/bruteforce.git`
 2. `cd bruteforce`
@@ -26,13 +26,13 @@ Open bruteforce.js in your favorite text editor and setup paths and configs from
 
 You must have the Gekko api server running so type the following into a console first:
 
-`cd ../gekko` (or wherever gekko resides)
-`node gekko --ui`
+1. `cd ../gekko` (or wherever gekko resides)
+2. `node gekko --ui`
 
 Then type the following to run the bruteforce app:
 
-`cd ../bruteforce` (again, wherever bruteforce.js is located)
-`node bruteforce.js`
+1. `cd ../bruteforce` (again, wherever bruteforce.js is located)
+2. `node bruteforce.js`
 
 # What's this TOML thing do?
 The TOML thing is pretty cool - it takes all the TOML files contents, re-writes them into JSON, then appends them to a Gekko config file. This is pretty awesome for us CLI guys who really don't use the front end but do use Strategy libraries such as the one here:
