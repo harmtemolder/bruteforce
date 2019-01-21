@@ -21,7 +21,7 @@ var count = 0;
 //set the path to your strategy files here:
 var strategiesFolder = "../gekko/strategies/";
 //set the path to your config file here:
-var configFile = "../gekko/config.js";
+var configFile = "../gekko/config-with-strategies.js";
 const config = require(configFile);
 //type "node gekko --ui" in your console and check that the address matches this one:
 var apiUrl = "http://localhost:3000";
@@ -35,25 +35,49 @@ var resultCsv = __dirname + "/results/" + humanize.date("Ymd_His_") + "bruteforc
 //then we load up the important shit!
 
 //how many backtests do you want to run parralel, 1928374982734 I bet but unless you're armed with a serious bit of pro, multi cpu kit...how about you keep this lower than the number of cores you have for now?
-var parallelqueries = 1;
+var parallelqueries = 2;
 
 //this is where it gets interesting right?
 //RIGHT!!!!
 //setup params for backtesting
 //fuck json, this is pure arrays as god intended us pony coders to use
 //throw in the candle sizes here
-var candleSizes = [10, 30, 60, 120, 240, 480, 1440];
+var candleSizes = [1440, 720, 480, 240, 120, 60, 30, 10];
 //list different history sizes here
 var historySizes = [21];
 //ooo this looks fun - this is where you set up the trading pairs and back testing exchange data
 //you can load up as many sets as you like
 var tradingPairs = [
-	["binance", "BTC", "BNB"]
+	["binance", "USDT", "BTC"],
+	["binance", "BTC", "DLT"],
+	["binance", "BTC", "ETH"],
+	["binance", "BTC", "TRX"],
+	["binance", "BTC", "QKC"],
+	["binance", "BTC", "VIBE"],
+	["binance", "BTC", "LINK"],
+	["binance", "PAX", "BTC"],
+	["binance", "BTC", "XRP"],
+	["binance", "BTC", "BNB"],
+	["binance", "BTC", "QLC"],
+	["binance", "BTC", "WAVES"],
+	["binance", "BTC", "TUSD"],
+	["binance", "BTC", "BCHABC"],
+	["binance", "BTC", "TNT"],
+	["binance", "USDC", "BTC"],
+	["binance", "BTC", "ADA"],
+	["binance", "BTC", "REP"],
+	["binance", "BTC", "LTC"],
+	["binance", "BTC", "BCHSV"],
+	["binance", "BTC", "EOS"],
+	["binance", "BTC", "XLM"],
+	["binance", "BTC", "ZIL"],
+	["binance", "BTC", "NEO"],
+	["binance", "BTC", "PHX"]
 ];
 //so this is the number of configs that will be generated with different strategy settings
 //if you multiply this by the number of candle sizes and history sizes and trading pairs you'll get the total number of backtests this sucker will run
 //Note: if you wanna test candle sizes, against the same config setup then just set this to 1. Cute right???
-var numberofruns = 10;
+var numberofruns = 32;
 
 let dirCont = fs.readdirSync(strategiesFolder);
 
