@@ -7,6 +7,7 @@ const { some } = require("bluebird");
 const fs = require("fs-extra");
 const humanize = require("humanize");
 const replaceall = require("replaceall");
+const process = require("process");
 
 //setup variables
 var viableStrategies = [];
@@ -107,6 +108,8 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 				config.watch.currency = tradingPairs[a][1];
 				config.watch.asset = tradingPairs[a][2];
 
+				//Added to reduce memory usage, as suggested by @Mottoweb
+				if (this.baseConfig) delete this.baseConfig
 				this.baseConfig = {
 					"backtest": {
 						"testCount": testCount,
@@ -180,6 +183,9 @@ async function hitApi(configs, numTests) {
 		//Get current datetime
 		let runDate = new Date().toISOString()
 
+		//Get current memory usage
+		let memUsage = process.memoryUsage()["rss"];
+
 		//Convert config to string without commas to not break the CSV
 		let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
 		let configCsv = replaceall(",", "|", configCsvTmp1)
@@ -190,7 +196,9 @@ async function hitApi(configs, numTests) {
 			+ data.tradingAdvisor.method + " with "
 			+ data.tradingAdvisor.candleSize + " min candles on "
 			+ data.watch.exchange + " for "
-			+ data.watch.currency + data.watch.asset + ".");
+			+ data.watch.currency + data.watch.asset + " (using "
+			+ humanize.filesize(memUsage) + " of memory).");
+			//Note that humanize docs prefer "fileSize", but that crashes
 
 		//Send the actual request to the Gekko server
 		const body = await rp.post({
@@ -226,8 +234,9 @@ async function hitApi(configs, numTests) {
 			"Profit": body.performanceReport.profit,
 			"Yearly Profit": body.performanceReport.yearlyProfit,
 			"Yearly Profit (%)": body.performanceReport.relativeYearlyProfit,
-			"Sharpe": body.performanceReport.sharpe || 0,
-			"Alpha": body.performanceReport.alpha
+			"Sharpe": body.performanceReport.sharpe || 0, //How can this be None?
+			"Alpha": body.performanceReport.alpha,
+			"Memory Usage": memUsage
 		};
 
 		//now we write the backtest results to file:
