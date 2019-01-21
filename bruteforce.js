@@ -1,35 +1,36 @@
+#!/usr/local/bin/node
+//require modules
 const async = require("async");
-// const nodemailer = require("nodemailer");
 const randomExt = require("random-ext");
 const rp = require("request-promise");
 const { some } = require("bluebird");
 const fs = require("fs-extra");
-// const flat = require("flat");
-// const util = require("util");
 const humanize = require("humanize");
-var replaceall = require("replaceall");
+const replaceall = require("replaceall");
 
 //setup variables
 var viableStrategies = [];
 var stratKey = "";
 var configs = [];
 var count = 0;
-//configuration elements
-//starting with paths and the all important gekko config
-//where are your gekko strategies?
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                      CONFIGURATION ELEMENTS
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//set the path to your strategy files here:
 var strategiesFolder = "../gekko/strategies/";
-//where is your config?
+//set the path to your config file here:
 var configFile = "../gekko/config.js";
-//where is your api server? (default is port 3000)
-//to run the server type node gekko --ui in to the console
-var apiUrl = "http://localhost:3000";
 const config = require(configFile);
+//type "node gekko --ui" in your console and check that the address matches this one:
+var apiUrl = "http://localhost:3000";
 
 //then we setup the filewriter to store the backtests
 //if you don't want to write the output to a file then set this to false, but then why the fuck else would you run this....derp
 var writecsv = true;
 //by default we throw the results into the folder and file you see below, the results will be appended...again....derp.
-var resultCsv = __dirname + '/results/' + humanize.date('Ymd_His_') + 'bruteforce.csv';
+var resultCsv = __dirname + "/results/" + humanize.date("Ymd_His_") + "bruteforce.csv";
 
 //then we load up the important shit!
 
@@ -60,12 +61,12 @@ let dirCont = fs.readdirSync(strategiesFolder);
 
 //so there is another version of this script that will run every single strategy in your strategy file that has an entry in the config but while useful...it was a bit crap when it came to brute forcing shit. So now you have to enter in your strategy name.
 //make sure the strategy has a config entry in the config below
-let strategies = ["bbRsi"];
+let strategies = ["private-bbRsi"];
 
 for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 	for (var j = 0, len1 = candleSizes.length; j < len1; j++) {
 		for (var k = 0, len2 = historySizes.length; k < len2; k++) {
-			//check which strategies have equivalent config entries for in the config 
+			//check which strategies have equivalent config entries for in the config
 			for (var i = 0, len = numberofruns; i < len; i++) {
 				stratKey = strategies[0];
 				config.tradingAdvisor.method = stratKey;
@@ -80,7 +81,7 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 						"daterange": {
 							"from": "2018-12-01T00:00:00Z",
 							"to": "2019-01-14T00:00:00Z"
-						}
+						} //TODO Somehow use all available data for each currency pair?
 					},
 					"backtestResultExporter": {
 						"enabled": true,
@@ -92,14 +93,6 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 							"stratCandleProps": ["close", "start", "open", "high", "volume", "vwp"],
 							"trades": true
 						}
-					},
-					"bbRsi": {
-						"bbPeriod": randomExt.integer(21,7),
-						"bbDeviation": 2,
-						"rsiPeriod": randomExt.integer(21,7),
-						"rsiOverbought": 70,
-						"rsiOversold": 30,
-						"trailPercentage": randomExt.integer(10,1)
 					},
 					"paperTrader": {
 						"feeMaker": config.paperTrader.feeMaker,
@@ -125,6 +118,15 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 						"exchange": config.watch.exchange,
 						"currency": config.watch.currency,
 						"asset": config.watch.asset
+					},
+					//strategy configurations starting from here:
+					"private-bbRsi": {
+						"bbPeriod": randomExt.integer(21, 7),
+						"bbDeviation": randomExt.float(3.0, 1.0),
+						"rsiPeriod": randomExt.integer(21, 7),
+						"rsiOverbought": randomExt.integer(75, 65),
+						"rsiOversold": randomExt.integer(35, 25),
+						"trailPercentage": randomExt.float(10.0, 0.5)
 					}
 				};
 
@@ -134,9 +136,9 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 	}
 }
 
-//by this point you have an array of all the configs you're gonna run. 
+//by this point you have an array of all the configs you're gonna run.
 
-//run the backtests against all the stored configs. 
+//run the backtests against all the stored configs.
 hitApi(configs);
 
 //this might look familiar...that's cos it's ripped from Gekkoga <3
@@ -169,7 +171,7 @@ async function hitApi(configs) {
 
 				}, {});
 
-        result = { strat: data.tradingAdvisor.method, startdate: data.backtest.daterange.from, todate: data.backtest.daterange.to, profit: body.performanceReport.profit, sharpe: body.performanceReport.sharpe, metrics: picked };
+				result = { strat: data.tradingAdvisor.method, startdate: data.backtest.daterange.from, todate: data.backtest.daterange.to, profit: body.performanceReport.profit, sharpe: body.performanceReport.sharpe, metrics: picked };
 			}
 
 			//now we write the backtest results to file:
@@ -180,11 +182,11 @@ async function hitApi(configs) {
 				//if(report.performanceReport.sharpe){
 				//	sharpe = report.performanceReport.sharpe;
 				//}
-				let currencyPair = "currency dunno";//report.currency+report.asset;
+				let currencyPair = "currency dunno"; //report.currency+report.asset;
 				let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
 				let configCsv = replaceall(",", "|", configCsvTmp1)
 				headertxt = "Strategy,Market Performance(%),Strat Performance (%),Profit,Run Date,Run Time,Start Date,End Date,Currency Pair,Candle Size,History Size,Currency,Asset,Timespan,Yearly Profit,Yearly Profit (%),Start Price,End Price,Trades,Start Balance,Sharpe,Alpha,Config\n";
-				outtxt = data.tradingAdvisor.method+","+ report.market+","+ report.relativeProfit+","+ report.profit+","+runDate+","+runTime+","+ data.backtest.daterange.from+","+ data.backtest.daterange.to+","+ currencyPair+","+ data.tradingAdvisor.candleSize+","+ data.tradingAdvisor.historySize+","+ report.currency+","+ report.asset+","+ report.timespan+","+ report.yearlyProfit+","+ report.relativeYearlyProfit+","+ report.startPrice+","+ report.endPrice+","+ report.trades+","+ report.startBalance+","+ sharpe+","+ report.alpha+","+ configCsv+"\n";	
+				outtxt = data.tradingAdvisor.method + "," + report.market + "," + report.relativeProfit + "," + report.profit + "," + runDate + "," + runTime + "," + data.backtest.daterange.from + "," + data.backtest.daterange.to + "," + currencyPair + "," + data.tradingAdvisor.candleSize + "," + data.tradingAdvisor.historySize + "," + report.currency + "," + report.asset + "," + report.timespan + "," + report.yearlyProfit + "," + report.relativeYearlyProfit + "," + report.startPrice + "," + report.endPrice + "," + report.trades + "," + report.startBalance + "," + sharpe + "," + report.alpha + "," + configCsv + "\n";
 
 				if (fs.existsSync(resultCsv)) {
 					fs.appendFileSync(resultCsv, outtxt, encoding = "utf8");
@@ -194,11 +196,11 @@ async function hitApi(configs) {
 				}
 				//to do
 				//write strategy file to a new file with a key
-				//ensure the config it appended to the strategy file			
+				//ensure the config it appended to the strategy file
 
 			}
 
-		  console.log(result);
+			console.log(result);
 			return result;
 
 		})
@@ -227,7 +229,6 @@ function queue(items, parallel, ftc) {
 			console.log(err)
 			throw err
 		});
-
 }
 
 function getConfig(data, stratName) {
@@ -240,5 +241,4 @@ function getConfig(data, stratName) {
 		}, {});
 
 	return conf;
-
 }
