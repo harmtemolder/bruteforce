@@ -145,7 +145,11 @@ hitApi(configs);
 async function hitApi(configs) {
 	const results = await queue(configs, parallelqueries, async (data) => {
 
-			console.log("Running strategy - " + data.tradingAdvisor.method + " on " + data.tradingAdvisor.candleSize + " minute(s) candle size on " + data.watch.exchange + " for " + data.watch.currency + data.watch.asset);
+			console.log(
+				"Running strategy - " + data.tradingAdvisor.method + " on "
+				+ data.tradingAdvisor.candleSize + " minute(s) candle size on "
+				+ data.watch.exchange + " for " + data.watch.currency + data.watch.asset);
+			//TODO Add progress counter
 			const body = await rp.post({
 				url: `${apiUrl}/api/backtest`,
 				json: true,
@@ -154,55 +158,58 @@ async function hitApi(configs) {
 				timeout: 1200000
 			});
 
-			// These properties will be outputted every epoch, remove property if not needed
-			const properties = ["balance", "profit", "sharpe", "market", "relativeProfit", "yearlyProfit", "relativeYearlyProfit", "startPrice", "endPrice", "trades"];
-
 			if (!body.performanceReport) return null;
-			const report = body.performanceReport;
 
-			let result = { profit: 0, metrics: false };
-			if (report) {
+			let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
+			let configCsv = replaceall(",", "|", configCsvTmp1)
+			let runDate = new Date().toISOString()
 
-				let picked = properties.reduce((o, k) => {
-
-					o[k] = report[k];
-
-					return o;
-
-				}, {});
-
-				result = { strat: data.tradingAdvisor.method, startdate: data.backtest.daterange.from, todate: data.backtest.daterange.to, profit: body.performanceReport.profit, sharpe: body.performanceReport.sharpe, metrics: picked };
-			}
+			var testResults = {
+				"Exchange": data.watch.exchange,
+				"Currency": data.watch.currency,
+				"Asset": data.watch.asset,
+				"Currency Pair": data.watch.currency + data.watch.asset,
+				"Strategy": data.tradingAdvisor.method,
+				"Config": configCsv,
+				"Candle Size": data.tradingAdvisor.candleSize,
+				"History Size": data.tradingAdvisor.historySize,
+				"Start Date": data.backtest.daterange.from,
+				"End Date": data.backtest.daterange.to,
+				"Run Date": runDate,
+				"Trades": body.performanceReport.trades,
+				"Market Performance (%)": body.performanceReport.market,
+				"Strategy Performance (%)": body.performanceReport.relativeProfit,
+				"Strategy vs Market": body.performanceReport.relativeProfit - body.performanceReport.market,
+				"Start Price": body.performanceReport.startPrice,
+				"End Price": body.performanceReport.endPrice,
+				"Start Balance": body.performanceReport.startBalance,
+				"End Balance": body.performanceReport.balance,
+				"Profit": body.performanceReport.profit,
+				"Yearly Profit": body.performanceReport.yearlyProfit,
+				"Yearly Profit (%)": body.performanceReport.relativeYearlyProfit,
+				"Sharpe": body.performanceReport.sharpe || 0,
+				"Alpha": body.performanceReport.alpha
+			};
 
 			//now we write the backtest results to file:
+
 			if (writecsv === true) {
-				let runDate = humanize.date("d-m-Y");
-				let runTime = humanize.date("H:i:s");
-				var sharpe = 0;
-				//if(report.performanceReport.sharpe){
-				//	sharpe = report.performanceReport.sharpe;
-				//}
-				let currencyPair = "currency dunno"; //report.currency+report.asset;
-				let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
-				let configCsv = replaceall(",", "|", configCsvTmp1)
-				headertxt = "Strategy,Market Performance(%),Strat Performance (%),Profit,Run Date,Run Time,Start Date,End Date,Currency Pair,Candle Size,History Size,Currency,Asset,Timespan,Yearly Profit,Yearly Profit (%),Start Price,End Price,Trades,Start Balance,Sharpe,Alpha,Config\n";
-				outtxt = data.tradingAdvisor.method + "," + report.market + "," + report.relativeProfit + "," + report.profit + "," + runDate + "," + runTime + "," + data.backtest.daterange.from + "," + data.backtest.daterange.to + "," + currencyPair + "," + data.tradingAdvisor.candleSize + "," + data.tradingAdvisor.historySize + "," + report.currency + "," + report.asset + "," + report.timespan + "," + report.yearlyProfit + "," + report.relativeYearlyProfit + "," + report.startPrice + "," + report.endPrice + "," + report.trades + "," + report.startBalance + "," + sharpe + "," + report.alpha + "," + configCsv + "\n";
+				let resultKeys = Object.keys(testResults);
+				let resultValues = resultKeys.map(function(key){return testResults[key]});
 
 				if (fs.existsSync(resultCsv)) {
-					fs.appendFileSync(resultCsv, outtxt, encoding = "utf8");
+					fs.appendFileSync(resultCsv, resultValues.toString() + "\n", encoding = "utf8");
 				} else {
-					fs.appendFileSync(resultCsv, headertxt, encoding = "utf8");
-					fs.appendFileSync(resultCsv, outtxt, encoding = "utf8");
+					fs.appendFileSync(resultCsv, resultKeys.toString() + "\n", encoding = "utf8");
+					fs.appendFileSync(resultCsv, resultValues.toString() + "\n", encoding = "utf8");
 				}
+
 				//to do
 				//write strategy file to a new file with a key
 				//ensure the config it appended to the strategy file
 
 			}
-
-			console.log(result);
-			return result;
-
+			return testResults;
 		})
 		.catch((err) => {
 			console.log(err)
