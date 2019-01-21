@@ -31,7 +31,7 @@ var apiUrl = "http://localhost:3000";
 var writecsv = true;
 //by default we throw the results into the folder and file you see below, the results will be appended...again....derp.
 var resultDir = __dirname + "/results"
-if (!fs.existsSync(resultDir)){fs.mkdirSync(resultDir);}
+if (!fs.existsSync(resultDir)) fs.mkdirSync(resultDir);
 var resultCsv = resultDir + "/" + humanize.date("Ymd_His_") + "bruteforce.csv";
 
 //then we load up the important shit!
@@ -89,11 +89,16 @@ let dirCont = fs.readdirSync(strategiesFolder);
 //make sure the strategy has a config entry in the config below
 let strategies = ["private-bbRsi"];
 
+//Add a counter to be used in the logging of test runs
+var testCount = 0;
+
 for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 	for (var j = 0, len1 = candleSizes.length; j < len1; j++) {
 		for (var k = 0, len2 = historySizes.length; k < len2; k++) {
 			//check which strategies have equivalent config entries for in the config
 			for (var i = 0, len = numberofruns; i < len; i++) {
+				testCount++;
+
 				stratKey = strategies[0];
 				config.tradingAdvisor.method = stratKey;
 				config.tradingAdvisor.candleSize = candleSizes[j];
@@ -104,6 +109,7 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 
 				this.baseConfig = {
 					"backtest": {
+						"testCount": testCount,
 						"daterange": {
 							"from": "2018-12-01T00:00:00Z",
 							"to": "2019-01-14T00:00:00Z"
@@ -165,84 +171,92 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 //by this point you have an array of all the configs you're gonna run.
 
 //run the backtests against all the stored configs.
-hitApi(configs);
+hitApi(configs, testCount);
 
 //this might look familiar...that's cos it's ripped from Gekkoga <3
-async function hitApi(configs) {
+async function hitApi(configs, numTests) {
 	const results = await queue(configs, parallelqueries, async (data) => {
 
-			console.log(
-				"Running strategy - " + data.tradingAdvisor.method + " on "
-				+ data.tradingAdvisor.candleSize + " minute(s) candle size on "
-				+ data.watch.exchange + " for " + data.watch.currency + data.watch.asset);
-			//TODO Add progress counter
-			const body = await rp.post({
-				url: `${apiUrl}/api/backtest`,
-				json: true,
-				body: data,
-				headers: { "Content-Type": "application/json" },
-				timeout: 1200000
-			});
+		//Get current datetime
+		let runDate = new Date().toISOString()
 
-			if (!body.performanceReport) return null;
+		//Convert config to string without commas to not break the CSV
+		let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
+		let configCsv = replaceall(",", "|", configCsvTmp1)
 
-			let configCsvTmp1 = JSON.stringify(data[data.tradingAdvisor.method]);
-			let configCsv = replaceall(",", "|", configCsvTmp1)
-			let runDate = new Date().toISOString()
+		console.log(
+			"[" + ("000" + data.backtest.testCount).slice(-numTests.toString().length) + "/"
+			+ numTests + "] Backtesting "
+			+ data.tradingAdvisor.method + " with "
+			+ data.tradingAdvisor.candleSize + " min candles on "
+			+ data.watch.exchange + " for "
+			+ data.watch.currency + data.watch.asset + ".");
 
-			var testResults = {
-				"Exchange": data.watch.exchange,
-				"Currency": data.watch.currency,
-				"Asset": data.watch.asset,
-				"Currency Pair": data.watch.currency + data.watch.asset,
-				"Strategy": data.tradingAdvisor.method,
-				"Config": configCsv,
-				"Candle Size": data.tradingAdvisor.candleSize,
-				"History Size": data.tradingAdvisor.historySize,
-				"Start Date": data.backtest.daterange.from,
-				"End Date": data.backtest.daterange.to,
-				"Run Date": runDate,
-				"Trades": body.performanceReport.trades,
-				"Market Performance (%)": body.performanceReport.market,
-				"Strategy Performance (%)": body.performanceReport.relativeProfit,
-				"Strategy vs Market": body.performanceReport.relativeProfit - body.performanceReport.market,
-				"Start Price": body.performanceReport.startPrice,
-				"End Price": body.performanceReport.endPrice,
-				"Start Balance": body.performanceReport.startBalance,
-				"End Balance": body.performanceReport.balance,
-				"Profit": body.performanceReport.profit,
-				"Yearly Profit": body.performanceReport.yearlyProfit,
-				"Yearly Profit (%)": body.performanceReport.relativeYearlyProfit,
-				"Sharpe": body.performanceReport.sharpe || 0,
-				"Alpha": body.performanceReport.alpha
-			};
-
-			//now we write the backtest results to file:
-
-			if (writecsv === true) {
-				let resultKeys = Object.keys(testResults);
-				let resultValues = resultKeys.map(function(key){return testResults[key]});
-
-				if (fs.existsSync(resultCsv)) {
-					fs.appendFileSync(resultCsv, resultValues.toString() + "\n", encoding = "utf8");
-				} else {
-					fs.appendFileSync(resultCsv, resultKeys.toString() + "\n", encoding = "utf8");
-					fs.appendFileSync(resultCsv, resultValues.toString() + "\n", encoding = "utf8");
-				}
-
-				//to do
-				//write strategy file to a new file with a key
-				//ensure the config it appended to the strategy file
-
-				//minor bug: Somehow it doesn't save the CSV if only 1 backtest was run
-
-			}
-			return testResults;
-		})
-		.catch((err) => {
-			console.log(err)
-			throw err
+		//Send the actual request to the Gekko server
+		const body = await rp.post({
+			url: `${apiUrl}/api/backtest`,
+			json: true,
+			body: data,
+			headers: { "Content-Type": "application/json" },
+			timeout: 1200000
 		});
+
+		if (!body.performanceReport) return null;
+
+		var testResults = {
+			"Exchange": data.watch.exchange,
+			"Currency": data.watch.currency,
+			"Asset": data.watch.asset,
+			"Currency Pair": data.watch.currency + data.watch.asset,
+			"Strategy": data.tradingAdvisor.method,
+			"Config": configCsv,
+			"Candle Size": data.tradingAdvisor.candleSize,
+			"History Size": data.tradingAdvisor.historySize,
+			"Start Date": data.backtest.daterange.from,
+			"End Date": data.backtest.daterange.to,
+			"Run Date": runDate,
+			"Trades": body.performanceReport.trades,
+			"Market Performance (%)": body.performanceReport.market,
+			"Strategy Performance (%)": body.performanceReport.relativeProfit,
+			"Strategy vs Market": body.performanceReport.relativeProfit - body.performanceReport.market,
+			"Start Price": body.performanceReport.startPrice,
+			"End Price": body.performanceReport.endPrice,
+			"Start Balance": body.performanceReport.startBalance,
+			"End Balance": body.performanceReport.balance,
+			"Profit": body.performanceReport.profit,
+			"Yearly Profit": body.performanceReport.yearlyProfit,
+			"Yearly Profit (%)": body.performanceReport.relativeYearlyProfit,
+			"Sharpe": body.performanceReport.sharpe || 0,
+			"Alpha": body.performanceReport.alpha
+		};
+
+		//now we write the backtest results to file:
+
+		if (writecsv === true) {
+			let resultKeys = Object.keys(testResults);
+			let resultValues = resultKeys.map(function(key){return testResults[key]});
+
+			if (fs.existsSync(resultCsv)) {
+				fs.appendFileSync(resultCsv, resultValues.toString() + "\n", encoding = "utf8");
+			} else {
+				fs.appendFileSync(resultCsv, resultKeys.toString() + "\n", encoding = "utf8");
+				fs.appendFileSync(resultCsv, resultValues.toString() + "\n", encoding = "utf8");
+			}
+
+			//to do
+			//write strategy file to a new file with a key
+			//ensure the config it appended to the strategy file
+
+			//minor bug: Somehow it doesn't save the CSV if only 1 backtest was run
+			//TODO Test to see if that means the last test of a batch isn't saved
+
+		}
+		return testResults;
+	})
+	.catch((err) => {
+		console.log(err)
+		throw err
+	});
 	return results;
 }
 
@@ -252,18 +266,18 @@ function queue(items, parallel, ftc) {
 
 	return Promise.all(items.map((item) => {
 
-			const mustComplete = Math.max(0, queued.length - parallel + 1);
-			const exec = some(queued, mustComplete)
-				.then(() => ftc(item));
-			queued.push(exec);
+		const mustComplete = Math.max(0, queued.length - parallel + 1);
+		const exec = some(queued, mustComplete)
+			.then(() => ftc(item));
+		queued.push(exec);
 
-			return exec;
+		return exec;
 
-		}))
-		.catch((err) => {
-			console.log(err)
-			throw err
-		});
+	}))
+	.catch((err) => {
+		console.log(err)
+		throw err
+	});
 }
 
 function getConfig(data, stratName) {
