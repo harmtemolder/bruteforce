@@ -1,9 +1,10 @@
 {
-  "name": "Gekko Warez Bruteforce Backtester",
-  "version": "1.0.0",
-  "description": "A swiss army nodejs brute force backtester for Gekko trading bot. Saves time so you can spend more time looking good. ",
+  "name": "bruteforce",
+  "version": "0.0.1",
+  "description": "A Swiss Army Node.js brute force backtester for Gekko trading bot. Saves time so you can spend more time looking good",
   "main": "bruteforce.js",
   "scripts": {
+    "start": "node --max_old_space_size=4096 ./bruteforce.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

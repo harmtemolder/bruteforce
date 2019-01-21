@@ -37,8 +37,10 @@ Then type the following to run the bruteforce app:
 
 ```
 cd ../bruteforce
-node bruteforce.js
+npm start
 ```
+
+(`npm start` will launch bruteforce with `--max_old_space_size=4096`, which should prevent the `JavaScript heap out of memory` error ([#3](https://github.com/gekkowarez/bruteforce/issues/3)).)
 
 # What's this TOML thing do?
 The TOML thing is pretty cool - it takes all the TOML files contents, re-writes them into JSON, then appends them to a Gekko config file. This is pretty awesome for us CLI guys who really don't use the front end but do use Strategy libraries such as the one here:
