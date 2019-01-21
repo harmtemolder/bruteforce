@@ -14,9 +14,11 @@ A Swiss Army Node.js brute force backtester for Gekko trading bot. Saves time so
 ## Installation:
 (You can install Bruteforce wherever you like, but it saves you time if you just set it up in a folder called "bruteforce" next to "gekko".)
 
-1. `git clone https://github.com/gekkowarez/bruteforce.git`
-2. `cd bruteforce`
-3. `npm install`
+```
+git clone https://github.com/gekkowarez/bruteforce.git`
+cd bruteforce
+npm install
+```
 
 ## Setup:
 
@@ -26,13 +28,17 @@ Open bruteforce.js in your favorite text editor and setup paths and configs from
 
 You must have the Gekko api server running so type the following into a console first:
 
-1. `cd ../gekko` (or wherever gekko resides)
-2. `node gekko --ui`
+```
+cd ../gekko
+node gekko --ui
+```
 
 Then type the following to run the bruteforce app:
 
-1. `cd ../bruteforce` (again, wherever bruteforce.js is located)
-2. `node bruteforce.js`
+```
+cd ../bruteforce
+node bruteforce.js
+```
 
 # What's this TOML thing do?
 The TOML thing is pretty cool - it takes all the TOML files contents, re-writes them into JSON, then appends them to a Gekko config file. This is pretty awesome for us CLI guys who really don't use the front end but do use Strategy libraries such as the one here:
@@ -42,7 +48,9 @@ https://github.com/xFFFFF/Gekko-Strategies/
 toml-config-converter.js will read strategy configurations from all TOML files in `strategiesFolder`, append them to `configFile` and save the result as `outputConfigFile`. Set your paths on lines 19, 21 and 23 accordingly.
 
 ## To run:
-`node toml-config-converter.js`
+```
+node toml-config-converter.js
+```
 
 ## Use:
 Make sure to point `configFile` in bruteforce.js to the output config file and you're good to go.
