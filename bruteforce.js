@@ -10,10 +10,11 @@ const replaceall = require("replaceall");
 const process = require("process");
 
 //setup variables
-var viableStrategies = [];
+// var viableStrategies = [];
 var stratKey = "";
 var configs = [];
-var count = 0;
+// var count = 0;
+// TODO Cleanup variable declarations
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                      CONFIGURATION ELEMENTS
@@ -77,6 +78,8 @@ var tradingPairs = [
 	["binance", "BTC", "NEO"],
 	["binance", "BTC", "PHX"]
 ];
+//Then also make it available for exporting
+module.exports.tradingPairs = tradingPairs;
 //so this is the number of configs that will be generated with different strategy settings
 //if you multiply this by the number of candle sizes and history sizes and trading pairs you'll get the total number of backtests this sucker will run
 //Note: if you wanna test candle sizes, against the same config setup then just set this to 1. Cute right???
@@ -93,79 +96,81 @@ let strategies = ["private-bbRsi"];
 //Add a counter to be used in the logging of test runs
 var testCount = 0;
 
-for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
-	for (var j = 0, len1 = candleSizes.length; j < len1; j++) {
-		for (var k = 0, len2 = historySizes.length; k < len2; k++) {
-			//check which strategies have equivalent config entries for in the config
-			for (var i = 0, len = numberofruns; i < len; i++) {
-				testCount++;
+function buildConfigs() {
+	for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
+		for (var j = 0, len1 = candleSizes.length; j < len1; j++) {
+			for (var k = 0, len2 = historySizes.length; k < len2; k++) {
+				//check which strategies have equivalent config entries for in the config
+				for (var i = 0, len = numberofruns; i < len; i++) {
+					testCount++;
 
-				stratKey = strategies[0];
-				config.tradingAdvisor.method = stratKey;
-				config.tradingAdvisor.candleSize = candleSizes[j];
-				config.tradingAdvisor.historySize = historySizes[k];
-				config.watch.exchange = tradingPairs[a][0];
-				config.watch.currency = tradingPairs[a][1];
-				config.watch.asset = tradingPairs[a][2];
+					stratKey = strategies[0];
+					config.tradingAdvisor.method = stratKey;
+					config.tradingAdvisor.candleSize = candleSizes[j];
+					config.tradingAdvisor.historySize = historySizes[k];
+					config.watch.exchange = tradingPairs[a][0];
+					config.watch.currency = tradingPairs[a][1];
+					config.watch.asset = tradingPairs[a][2];
 
-				//Added to reduce memory usage, as suggested by @Mottoweb
-				if (this.baseConfig) delete this.baseConfig
-				this.baseConfig = {
-					"backtest": {
-						"testCount": testCount,
-						"daterange": {
-							"from": "2018-12-01T00:00:00Z",
-							"to": "2019-01-14T00:00:00Z"
-						} //TODO Somehow use all available data for each currency pair?
-					},
-					"backtestResultExporter": {
-						"enabled": true,
-						"writeToDisk": false,
-						"data": {
-							"stratUpdates": false,
-							"roundtrips": true,
-							"stratCandles": true,
-							"stratCandleProps": ["close", "start", "open", "high", "volume", "vwp"],
-							"trades": true
+					//Added to reduce memory usage, as suggested by @Mottoweb
+					if (this.baseConfig) delete this.baseConfig
+					this.baseConfig = {
+						"backtest": {
+							"testCount": testCount,
+							"daterange": {
+								"from": "2018-12-01T00:00:00Z",
+								"to": "2019-01-14T00:00:00Z"
+							} //TODO Somehow use all available data for each currency pair?
+						},
+						"backtestResultExporter": {
+							"enabled": true,
+							"writeToDisk": false,
+							"data": {
+								"stratUpdates": false,
+								"roundtrips": true,
+								"stratCandles": true,
+								"stratCandleProps": ["close", "start", "open", "high", "volume", "vwp"],
+								"trades": true
+							}
+						},
+						"paperTrader": {
+							"feeMaker": config.paperTrader.feeMaker,
+							"feeTaker": config.paperTrader.feeTaker,
+							"feeUsing": config.paperTrader.feeUsing,
+							"slippage": config.paperTrader.slippage,
+							"simulationBalance": config.paperTrader.simulationBalance,
+							"reportRoundtrips": true,
+							"enabled": true
+						},
+						"performanceAnalyzer": {
+							"riskFreeReturn": 2,
+							"enabled": true
+						},
+						"tradingAdvisor": {
+							"enabled": true,
+							"method": config.tradingAdvisor.method,
+							"candleSize": config.tradingAdvisor.candleSize,
+							"historySize": config.tradingAdvisor.historySize
+						},
+						"valid": true,
+						"watch": {
+							"exchange": config.watch.exchange,
+							"currency": config.watch.currency,
+							"asset": config.watch.asset
+						},
+						//strategy configurations starting from here:
+						"private-bbRsi": {
+							"bbPeriod": randomExt.integer(21, 7),
+							"bbDeviation": randomExt.float(3.0, 1.0),
+							"rsiPeriod": randomExt.integer(21, 7),
+							"rsiOverbought": randomExt.integer(75, 65),
+							"rsiOversold": randomExt.integer(35, 25),
+							"trailPercentage": randomExt.float(10.0, 0.5)
 						}
-					},
-					"paperTrader": {
-						"feeMaker": config.paperTrader.feeMaker,
-						"feeTaker": config.paperTrader.feeTaker,
-						"feeUsing": config.paperTrader.feeUsing,
-						"slippage": config.paperTrader.slippage,
-						"simulationBalance": config.paperTrader.simulationBalance,
-						"reportRoundtrips": true,
-						"enabled": true
-					},
-					"performanceAnalyzer": {
-						"riskFreeReturn": 2,
-						"enabled": true
-					},
-					"tradingAdvisor": {
-						"enabled": true,
-						"method": config.tradingAdvisor.method,
-						"candleSize": config.tradingAdvisor.candleSize,
-						"historySize": config.tradingAdvisor.historySize
-					},
-					"valid": true,
-					"watch": {
-						"exchange": config.watch.exchange,
-						"currency": config.watch.currency,
-						"asset": config.watch.asset
-					},
-					//strategy configurations starting from here:
-					"private-bbRsi": {
-						"bbPeriod": randomExt.integer(21, 7),
-						"bbDeviation": randomExt.float(3.0, 1.0),
-						"rsiPeriod": randomExt.integer(21, 7),
-						"rsiOverbought": randomExt.integer(75, 65),
-						"rsiOversold": randomExt.integer(35, 25),
-						"trailPercentage": randomExt.float(10.0, 0.5)
-					}
-				};
+					};
 
-				configs.push(this.baseConfig);
+					configs.push(this.baseConfig);
+				}
 			}
 		}
 	}
@@ -173,8 +178,11 @@ for (var a = 0, len4 = tradingPairs.length; a < len4; a++) {
 
 //by this point you have an array of all the configs you're gonna run.
 
-//run the backtests against all the stored configs.
-hitApi(configs, testCount);
+//if this script is run directly, run the backtests against all stored configs.
+if (typeof require !== "undefined" && require.main === module) {
+	buildConfigs();
+	hitApi(configs, testCount);
+}
 
 //this might look familiar...that's cos it's ripped from Gekkoga <3
 async function hitApi(configs, numTests) {
